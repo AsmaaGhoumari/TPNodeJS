@@ -1,0 +1,111 @@
+var http = require('http');//importation de la bibliothèque http dans la variable http
+var util= require('util');//importation de la bibliothèque util dans la variable util
+var url = require ('url');//importation de la bibliothèque url dans la variable url
+
+var serv = {}; //création d'un objet
+
+serv.cpt=0;//création du compteur
+serv.msg={};
+serv.id=0;
+serv.ld;
+var tmp=''; //pour lui dire qu'il va recevoir une chaine de caractère 
+
+serv.init=function (req, res) {  //pointeur de la fonction dans init
+  // util.log(util.inspect(req.url));
+	serv.cpt+=1;// on incrémente le compteur
+	var u= url.parse(req.url,false);//analyse url pour récupérer le path http://nodejs.org/api/url.html
+	var k= u.query;//requête concernant que u
+	 var reponse;
+	if(req.method=='GET'){ //on s'interesse à l'url
+		if(u.pathname.indexOf('date_now')!=-1){
+		reponse="La date est "+serv.date_now()+"\n";
+		}	
+		else if(u.pathname.indexOf('get_request')!=-1){
+		var reponse = "\nIl y a "+serv.get_request();	
+		}	
+		else if(u.pathname.indexOf('reset_request')!=-1){
+		reponse="\nMise a zero du nb de requetes "+serv.reset_request();
+		}
+		else if(u.pathname.indexOf('set_message')!=-1){
+		reponse = "\nStockage du message a l'id : "+serv.set_message(k);
+		}
+		else if(u.pathname.indexOf('get_message')!=-1){
+		 reponse = "\nLe dernier message stocke est : "+serv.get_message(k);
+		}
+		else if(u.pathname.indexOf('last_date')!=-1){
+		 reponse = "\nLe temps ecoule depuis le dernier message stocke est : "+serv.last_date();
+		}
+		else if(u.pathname.indexOf('get_all_message')!=-1){
+		reponse = "\n Tous les messages stockes: "+serv.get_all_message();
+		}
+		else if(u.pathname.indexOf('reset_all_message')!=-1){
+		reponse = "\n Tous les messages ont ete effaces ";serv.reset_all_message();
+		}
+	res.writeHead(200, {'Content-Type' : 'text/plain'});
+	res.end(reponse);	 //on renvoie la rep avant de fermer
+	}
+	
+	else if(req.method=='POST'){ //on s'intéresse à toutes les requêtes (pas que l'url). Faut attendre de tout recevoir pour pouvoir traiter 
+		var glob=''; //variable locale, un string 
+		req.on('data', function(data) {
+             glob+= data;
+		});
+		req.on('end',function() {
+		var temp=glob.split("="); //tmp est un tableau, avant = on a 0, après = on a 1
+		if (temp[0].indexOf('facto')!=-1){
+		var reponse = "\n calcul factoriel : "+serv.facto(temp[1]);
+		}
+		res.writeHead(200, {'Content-Type' : 'text/plain'});
+        res.end(reponse);        
+        });
+	}
+};
+
+serv.date_now=function (){
+	return serv.ld=new Date(); //new = créer nouvel objet mais qui n'est pas vide, déjà connu, Date() connu aussi  
+};
+
+serv.get_request= function(){
+	return serv.cpt;
+};
+
+serv.reset_request= function(){
+	serv.cpt=0;
+	return
+};
+
+serv.set_message=function(msg){
+	serv.msg [serv.id++]= msg;//stockage du msg dans l'indice, puis il incrémente l'indice sur la case d'après
+	return	serv.id-1;//retourne l'id du dernier message
+};
+
+serv.get_message=function(k){
+	return serv.msg[k];//on affiche le contenu du dernier message : attention à l'indice
+};
+
+serv.last_date=function(){
+	return new Date()-serv.ld;
+};
+
+serv.get_all_message=function(){
+	for(id in serv.msg){
+		tmp+=serv.msg[id]; //on concatène tous les messages qu'on stocke dans une variable car on fait UN SEUL return (donc pas dans la boucle)
+	}	
+};
+
+serv.reset_all_message=function(){
+	for(id in serv.msg){
+		serv.msg[id]='';//on efface toutes les cases du tableau
+	}	
+};
+
+
+serv.facto=function(x){
+	if(x){    //si x non nul                    
+     return (x < 2) ? 1 :  x*serv.facto(x-1);//et different de 1, alors on fait la boucle
+    }
+	
+};
+
+http.createServer(serv.init).listen(1337, '127.0.0.1');//écoute le port local 
+util.log('Server running at http://127.0.0.1:1337/');//affiche sur la console 
